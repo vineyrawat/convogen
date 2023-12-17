@@ -1,28 +1,136 @@
 import 'dart:convert';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
+import 'package:provider/provider.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(ChangeNotifierProvider(
+      create: (context) => ThemeNotifier(), child: const MyApp()));
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Gemini Client',
-      themeMode: ThemeMode.dark,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.black),
+      themeMode: Provider.of<ThemeNotifier>(context).themeMode,
+      darkTheme: ThemeData.dark(
         useMaterial3: true,
       ),
-      home: const ChatPage(),
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blueAccent),
+        useMaterial3: true,
+      ),
+      home: const Scaffold(body: RootPage()),
+    );
+  }
+}
+
+class RootPage extends StatefulWidget {
+  const RootPage({
+    super.key,
+  });
+
+  @override
+  State<RootPage> createState() => _RootPageState();
+}
+
+class _RootPageState extends State<RootPage> {
+  int currentIndex = 1;
+  final _pageController = PageController(initialPage: 1);
+
+  void onChatPageChanged(int index) {
+    setState(() {
+      currentIndex = index;
+    });
+    _pageController.animateToPage(index,
+        curve: Curves.easeOut, duration: const Duration(milliseconds: 300));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    List<Widget> pages = [Container(), const ChatPage(), Container()];
+    _pageController.addListener(() {
+      setState(() {
+        currentIndex = _pageController.page!.round();
+      });
+    });
+
+    return Scaffold(
+      appBar: AppBar(
+          centerTitle: true,
+          actions: [
+            IconButton(
+              onPressed: () {},
+              icon: const Icon(CupertinoIcons.share),
+            )
+          ],
+          leading: IconButton(
+              onPressed: () {
+                showBottomSheet(
+                    enableDrag: true,
+                    constraints: BoxConstraints(
+                        maxHeight: 200,
+                        maxWidth: 500,
+                        minWidth: MediaQuery.of(context).size.width),
+                    context: context,
+                    builder: (context) {
+                      return Column(children: [
+                        const SizedBox(
+                          height: 10,
+                        ),
+                        ListTile(
+                          leading: const Icon(Icons.dark_mode),
+                          title: const Text("Dark Theme"),
+                          trailing: GestureDetector(
+                            onTap: () {
+                              Provider.of<ThemeNotifier>(context, listen: false)
+                                  .toggleTheme();
+                            },
+                            child: CupertinoSwitch(
+                                value: Theme.of(context).brightness ==
+                                    Brightness.dark,
+                                onChanged: null),
+                          ),
+                        ),
+                      ]);
+                    });
+              },
+              icon: const Icon(CupertinoIcons.command)),
+          toolbarHeight: 80,
+          title: const Text('Gemini Client'),
+          shadowColor: Colors.blueAccent,
+          bottom: PreferredSize(
+              preferredSize: Size.zero,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                height: currentIndex == 1 ? 10 : 0,
+                color: Colors.blueAccent,
+              )),
+          backgroundColor: Theme.of(context).colorScheme.background,
+          elevation: currentIndex == 1 &&
+                  Theme.of(context).brightness == Brightness.dark
+              ? 30
+              : 0),
+      body: PageView(controller: _pageController, children: pages),
+      bottomNavigationBar: BottomNavigationBar(
+        onTap: (index) => onChatPageChanged(index),
+        currentIndex: currentIndex,
+        items: const [
+          BottomNavigationBarItem(
+              icon: Icon(CupertinoIcons.chat_bubble_2), label: "Chats"),
+          BottomNavigationBarItem(
+              icon: Icon(CupertinoIcons.bolt), label: "Gemini"),
+          BottomNavigationBarItem(
+              icon: Icon(CupertinoIcons.settings), label: "Settings")
+        ],
+      ),
     );
   }
 }
@@ -59,14 +167,38 @@ class _ChatPageState extends State<ChatPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Gemini Client')),
-      body: Chat(
-          messages: _messages,
-          onSendPressed: (p0) {
-            print(p0);
-          },
-          user: _user),
-    );
+    return Chat(
+        theme: Theme.of(context).brightness == Brightness.dark
+            ? DarkChatTheme(
+                backgroundColor: Theme.of(context).canvasColor,
+                primaryColor: Colors.black,
+                secondaryColor: Colors.black,
+                inputBackgroundColor: Colors.black,
+              )
+            : DefaultChatTheme(
+                backgroundColor: Theme.of(context).canvasColor,
+                primaryColor: Theme.of(context).colorScheme.primary,
+                inputBackgroundColor:
+                    Theme.of(context).colorScheme.primaryContainer,
+                inputTextColor:
+                    Theme.of(context).colorScheme.onPrimaryContainer,
+              ),
+        messages: _messages,
+        onSendPressed: (p0) {
+          print(p0);
+        },
+        user: _user);
+  }
+}
+
+class ThemeNotifier with ChangeNotifier {
+  ThemeMode _themeMode = ThemeMode.system; // Default to system theme
+
+  ThemeMode get themeMode => _themeMode;
+
+  void toggleTheme() {
+    _themeMode =
+        _themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
+    notifyListeners();
   }
 }
