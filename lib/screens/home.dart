@@ -55,19 +55,11 @@ class _RootPageState extends ConsumerState<RootPage> {
           ],
           leading: IconButton(
               onPressed: () {
-                showBottomSheet(
-                    enableDrag: true,
-                    constraints: const BoxConstraints(
-                      maxHeight: 200,
-                      maxWidth: 500,
-                    ),
+                showDialog(
                     context: context,
                     builder: (context) {
-                      return Column(children: [
-                        const SizedBox(
-                          height: 10,
-                        ),
-                        ListTile(
+                      return Dialog(
+                        child: ListTile(
                           leading: const Icon(Icons.dark_mode),
                           title: const Text("Dark Theme"),
                           trailing: GestureDetector(
@@ -82,7 +74,7 @@ class _RootPageState extends ConsumerState<RootPage> {
                                 onChanged: null),
                           ),
                         ),
-                      ]);
+                      );
                     });
               },
               icon: const Icon(CupertinoIcons.command)),
