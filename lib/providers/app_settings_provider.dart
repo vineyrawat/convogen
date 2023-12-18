@@ -31,6 +31,7 @@ class AppSettingsStateNotifier extends StateNotifier<AppSettingsState> {
   init() async {
     log("INITIALIZING APP SETTINGS PROVIDER");
     await getApiKey();
+    log("INITIALIZED APP SETTINGS PROVIDER");
   }
 
   getApiKey() async {
