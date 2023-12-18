@@ -5,11 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:provider/provider.dart' as provider;
 
 void main() {
-  runApp(ChangeNotifierProvider(
-      create: (context) => ThemeNotifier(), child: const MyApp()));
+  runApp(ProviderScope(
+    child: provider.ChangeNotifierProvider(
+        create: (context) => ThemeNotifier(), child: const MyApp()),
+  ));
 }
 
 class MyApp extends StatelessWidget {
@@ -19,7 +22,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Gemini Client',
-      themeMode: Provider.of<ThemeNotifier>(context).themeMode,
+      themeMode: provider.Provider.of<ThemeNotifier>(context).themeMode,
       darkTheme: ThemeData.dark(
         useMaterial3: true,
       ),
@@ -55,7 +58,11 @@ class _RootPageState extends State<RootPage> {
 
   @override
   Widget build(BuildContext context) {
-    List<Widget> pages = [Container(), const ChatPage(), Container()];
+    List<Widget> pages = [
+      const DevelopmentMode(),
+      const ChatPage(),
+      const DevelopmentMode()
+    ];
     _pageController.addListener(() {
       setState(() {
         currentIndex = _pageController.page!.round();
@@ -75,10 +82,10 @@ class _RootPageState extends State<RootPage> {
               onPressed: () {
                 showBottomSheet(
                     enableDrag: true,
-                    constraints: BoxConstraints(
-                        maxHeight: 200,
-                        maxWidth: 500,
-                        minWidth: MediaQuery.of(context).size.width),
+                    constraints: const BoxConstraints(
+                      maxHeight: 200,
+                      maxWidth: 500,
+                    ),
                     context: context,
                     builder: (context) {
                       return Column(children: [
@@ -90,7 +97,8 @@ class _RootPageState extends State<RootPage> {
                           title: const Text("Dark Theme"),
                           trailing: GestureDetector(
                             onTap: () {
-                              Provider.of<ThemeNotifier>(context, listen: false)
+                              provider.Provider.of<ThemeNotifier>(context,
+                                      listen: false)
                                   .toggleTheme();
                             },
                             child: CupertinoSwitch(
@@ -200,5 +208,28 @@ class ThemeNotifier with ChangeNotifier {
     _themeMode =
         _themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
     notifyListeners();
+  }
+}
+
+class DevelopmentMode extends StatelessWidget {
+  const DevelopmentMode({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: MediaQuery.of(context).size.height,
+      width: MediaQuery.of(context).size.width,
+      child: const Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(CupertinoIcons.exclamationmark_triangle),
+          SizedBox(
+            height: 10,
+          ),
+          Text("Feature in development")
+        ],
+      ),
+    );
   }
 }
