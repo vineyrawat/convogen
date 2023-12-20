@@ -60,18 +60,17 @@ class _RootPageState extends ConsumerState<RootPage> {
                     builder: (context) {
                       return Dialog(
                         child: ListTile(
-                          leading: const Icon(Icons.dark_mode),
+                          leading: const Icon(CupertinoIcons.moon_stars),
                           title: const Text("Dark Theme"),
-                          trailing: GestureDetector(
-                            onTap: () {
+                          trailing: CupertinoSwitch(
+                            activeColor: Theme.of(context).primaryColor,
+                            value:
+                                Theme.of(context).brightness == Brightness.dark,
+                            onChanged: (value) {
                               provider.Provider.of<ThemeNotifier>(context,
                                       listen: false)
                                   .toggleTheme();
                             },
-                            child: CupertinoSwitch(
-                                value: Theme.of(context).brightness ==
-                                    Brightness.dark,
-                                onChanged: null),
                           ),
                         ),
                       );

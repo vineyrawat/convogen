@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import "package:flutter/material.dart";
 import 'dart:convert';
 
@@ -16,7 +18,16 @@ class _ChatPageState extends State<ChatPage> {
   List<types.Message> _messages = [];
   final _user = const types.User(
     id: '82091008-a484-4a89-ae75-a22bf8d6f3ac',
+    firstName: "Gemini",
+    lastName: "Client",
   );
+
+  bool isTyping = false;
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
 
   void _loadMessages() async {
     final response = await rootBundle.loadString('assets/messages.json');
@@ -38,6 +49,13 @@ class _ChatPageState extends State<ChatPage> {
   @override
   Widget build(BuildContext context) {
     return Chat(
+        inputOptions: InputOptions(
+          enabled: !isTyping,
+          sendButtonVisibilityMode: SendButtonVisibilityMode.always,
+        ),
+        customStatusBuilder: (message, {required context}) {
+          return const SizedBox();
+        },
         theme: Theme.of(context).brightness == Brightness.dark
             ? DarkChatTheme(
                 backgroundColor: Theme.of(context).canvasColor,
@@ -55,8 +73,12 @@ class _ChatPageState extends State<ChatPage> {
               ),
         messages: _messages,
         onSendPressed: (p0) {
-          print(p0);
+          log(p0.text);
         },
+        typingIndicatorOptions: TypingIndicatorOptions(
+          typingMode: TypingIndicatorMode.name,
+          typingUsers: isTyping ? [_user] : [],
+        ),
         user: _user);
   }
 }
