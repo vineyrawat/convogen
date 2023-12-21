@@ -2,11 +2,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gemini_client/providers/app_settings_provider.dart';
-import 'package:gemini_client/providers/theme_provider.dart';
 import 'package:gemini_client/screens/chat.dart';
 import 'package:gemini_client/screens/chats.dart';
 import 'package:gemini_client/screens/settings.dart';
-import 'package:provider/provider.dart' as provider;
 
 class RootPage extends ConsumerStatefulWidget {
   const RootPage({
@@ -35,6 +33,12 @@ class _RootPageState extends ConsumerState<RootPage> {
     const SettingsScreen()
   ];
 
+  List<NavItem> navItems = [
+    NavItem(label: "Chats", icon: CupertinoIcons.chat_bubble_2),
+    NavItem(label: "Gemini", icon: CupertinoIcons.bolt),
+    NavItem(label: "Settings", icon: CupertinoIcons.settings)
+  ];
+
   @override
   Widget build(BuildContext context) {
     ref.read(appSettingsProvider);
@@ -46,37 +50,13 @@ class _RootPageState extends ConsumerState<RootPage> {
 
     return Scaffold(
       appBar: AppBar(
-          centerTitle: true,
+          centerTitle: false,
           actions: [
             IconButton(
               onPressed: () {},
               icon: const Icon(CupertinoIcons.share),
             )
           ],
-          leading: IconButton(
-              onPressed: () {
-                showDialog(
-                    context: context,
-                    builder: (context) {
-                      return Dialog(
-                        child: ListTile(
-                          leading: const Icon(CupertinoIcons.moon_stars),
-                          title: const Text("Dark Theme"),
-                          trailing: CupertinoSwitch(
-                            activeColor: Theme.of(context).primaryColor,
-                            value:
-                                Theme.of(context).brightness == Brightness.dark,
-                            onChanged: (value) {
-                              provider.Provider.of<ThemeNotifier>(context,
-                                      listen: false)
-                                  .toggleTheme();
-                            },
-                          ),
-                        ),
-                      );
-                    });
-              },
-              icon: const Icon(CupertinoIcons.command)),
           toolbarHeight: 80,
           title: const Text('Gemini Client'),
           shadowColor: Colors.blueAccent,
@@ -92,19 +72,41 @@ class _RootPageState extends ConsumerState<RootPage> {
                   Theme.of(context).brightness == Brightness.dark
               ? 30
               : 0),
-      body: PageView(controller: _pageController, children: pages),
-      bottomNavigationBar: BottomNavigationBar(
-        onTap: (index) => onChatPageChanged(index),
-        currentIndex: currentIndex,
-        items: const [
-          BottomNavigationBarItem(
-              icon: Icon(CupertinoIcons.chat_bubble_2), label: "Chats"),
-          BottomNavigationBarItem(
-              icon: Icon(CupertinoIcons.bolt), label: "Gemini"),
-          BottomNavigationBarItem(
-              icon: Icon(CupertinoIcons.settings), label: "Settings")
-        ],
-      ),
+      body: LayoutBuilder(builder: (context, constrains) {
+        if (constrains.maxWidth > 700) {
+          return Row(
+            children: [
+              NavigationRail(
+                destinations: navItems
+                    .map((e) => NavigationRailDestination(
+                        icon: Icon(e.icon), label: Text(e.label)))
+                    .toList(),
+                selectedIndex: currentIndex,
+                onDestinationSelected: (value) {
+                  onChatPageChanged(value);
+                },
+              ),
+              Expanded(child: pages[currentIndex])
+            ],
+          );
+        }
+        return PageView(controller: _pageController, children: pages);
+      }),
+      bottomNavigationBar: MediaQuery.of(context).size.width > 700
+          ? null
+          : BottomNavigationBar(
+              onTap: (index) => onChatPageChanged(index),
+              currentIndex: currentIndex,
+              items: navItems
+                  .map((e) => BottomNavigationBarItem(
+                      icon: Icon(e.icon), label: e.label))
+                  .toList()),
     );
   }
+}
+
+class NavItem {
+  String label;
+  IconData icon;
+  NavItem({required this.label, required this.icon});
 }

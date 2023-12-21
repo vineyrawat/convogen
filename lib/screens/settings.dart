@@ -5,6 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gemini_client/providers/app_settings_provider.dart';
+import 'package:gemini_client/providers/theme_provider.dart';
+import 'package:provider/provider.dart' as provider;
+
 import 'package:toastification/toastification.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -83,7 +86,6 @@ class SettingsScreen extends ConsumerWidget {
               ),
               title: const Text("Enable Document Upload"),
               trailing: CupertinoSwitch(
-                activeColor: Theme.of(context).primaryColor,
                 value: false,
                 onChanged: (value) {
                   toastification.show(
@@ -99,6 +101,18 @@ class SettingsScreen extends ConsumerWidget {
                 },
               ),
             ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(CupertinoIcons.moon_stars),
+              title: const Text("Dark Theme"),
+              trailing: CupertinoSwitch(
+                value: Theme.of(context).brightness == Brightness.dark,
+                onChanged: (value) {
+                  provider.Provider.of<ThemeNotifier>(context, listen: false)
+                      .toggleTheme();
+                },
+              ),
+            )
           ],
         ),
       ),

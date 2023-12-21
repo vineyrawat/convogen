@@ -45,6 +45,7 @@ dependencies:
   flutter_custom_clippers: ^2.1.0
   loading_animation_widget: ^1.2.0+4
   toastification: ^1.1.0
+  device_preview: ^1.1.0
 
 dev_dependencies:
   flutter_test:
