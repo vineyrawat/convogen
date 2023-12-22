@@ -1,56 +1,26 @@
-import 'dart:developer';
-
 import "package:flutter/material.dart";
-import 'dart:convert';
-
-import 'package:flutter/services.dart';
-import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
+import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:convogen/providers/gemini_chat_provider.dart';
 
-class ChatPage extends StatefulWidget {
+class ChatPage extends ConsumerWidget {
   const ChatPage({super.key});
 
   @override
-  State<ChatPage> createState() => _ChatPageState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    var geminiChat = ref.watch(geminiChatProvider);
 
-class _ChatPageState extends State<ChatPage> {
-  List<types.Message> _messages = [];
-  final _user = const types.User(
-    id: '82091008-a484-4a89-ae75-a22bf8d6f3ac',
-    firstName: "Gemini",
-    lastName: "Client",
-  );
+    if (geminiChat is InitialLoadingState) {
+      return Center(
+        child: LoadingAnimationWidget.staggeredDotsWave(
+            color: Colors.blueAccent, size: 50),
+      );
+    }
 
-  bool isTyping = false;
-
-  @override
-  void dispose() {
-    super.dispose();
-  }
-
-  void _loadMessages() async {
-    final response = await rootBundle.loadString('assets/messages.json');
-    final messages = (jsonDecode(response) as List)
-        .map((e) => types.Message.fromJson(e as Map<String, dynamic>))
-        .toList();
-
-    setState(() {
-      _messages = messages;
-    });
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _loadMessages();
-  }
-
-  @override
-  Widget build(BuildContext context) {
     return Chat(
         inputOptions: InputOptions(
-          enabled: !isTyping,
+          enabled: !geminiChat.isTyping,
           sendButtonVisibilityMode: SendButtonVisibilityMode.always,
         ),
         customStatusBuilder: (message, {required context}) {
@@ -71,14 +41,14 @@ class _ChatPageState extends State<ChatPage> {
                 inputTextColor:
                     Theme.of(context).colorScheme.onPrimaryContainer,
               ),
-        messages: _messages,
-        onSendPressed: (p0) {
-          log(p0.text);
+        messages: geminiChat.messages,
+        onSendPressed: (p0) async {
+          await ref.read(geminiChatProvider.notifier).getFromText(p0.text);
         },
         typingIndicatorOptions: TypingIndicatorOptions(
           typingMode: TypingIndicatorMode.name,
-          typingUsers: isTyping ? [_user] : [],
+          typingUsers: geminiChat.isTyping ? [geminiChat.users[0]] : [],
         ),
-        user: _user);
+        user: geminiChat.users[0]);
   }
 }

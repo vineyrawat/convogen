@@ -1,4 +1,4 @@
-# gemini_client
+# convogen
 
 A new Flutter project.
 

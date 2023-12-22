@@ -1,4 +1,4 @@
-package com.example.gemini_client
+package com.vinaybyte.convogen
 
 import io.flutter.embedding.android.FlutterActivity
 

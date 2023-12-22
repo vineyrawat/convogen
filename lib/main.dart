@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:gemini_client/providers/theme_provider.dart';
-import 'package:gemini_client/screens/home.dart';
+import 'package:convogen/providers/theme_provider.dart';
+import 'package:convogen/router/router.dart';
 import 'package:provider/provider.dart' as provider;
 import 'package:device_preview/device_preview.dart';
 
@@ -20,7 +20,10 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
+      routeInformationParser: router.routeInformationParser,
+      routeInformationProvider: router.routeInformationProvider,
+      routerDelegate: router.routerDelegate,
       title: 'Gemini Client',
       debugShowCheckedModeBanner: false,
       themeMode: provider.Provider.of<ThemeNotifier>(context).themeMode,
@@ -32,7 +35,6 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
         useMaterial3: true,
       ),
-      home: const Scaffold(body: RootPage()),
     );
   }
 }

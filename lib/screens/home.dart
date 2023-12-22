@@ -1,10 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:gemini_client/providers/app_settings_provider.dart';
-import 'package:gemini_client/screens/chat.dart';
-import 'package:gemini_client/screens/chats.dart';
-import 'package:gemini_client/screens/settings.dart';
+import 'package:convogen/providers/app_settings_provider.dart';
+import 'package:convogen/screens/chat.dart';
+import 'package:convogen/screens/chats.dart';
+import 'package:convogen/screens/settings.dart';
+import 'package:convogen/screens/splash.dart';
 
 class RootPage extends ConsumerStatefulWidget {
   const RootPage({
@@ -34,9 +35,18 @@ class _RootPageState extends ConsumerState<RootPage> {
   ];
 
   List<NavItem> navItems = [
-    NavItem(label: "Chats", icon: CupertinoIcons.chat_bubble_2),
-    NavItem(label: "Gemini", icon: CupertinoIcons.bolt),
-    NavItem(label: "Settings", icon: CupertinoIcons.settings)
+    NavItem(
+        label: "Chats",
+        icon: CupertinoIcons.chat_bubble_2,
+        activeIcon: CupertinoIcons.chat_bubble_2_fill),
+    NavItem(
+        label: "Gemini",
+        icon: CupertinoIcons.bolt,
+        activeIcon: CupertinoIcons.bolt_fill),
+    NavItem(
+        label: "Settings",
+        icon: CupertinoIcons.settings,
+        activeIcon: CupertinoIcons.settings),
   ];
 
   @override
@@ -58,7 +68,9 @@ class _RootPageState extends ConsumerState<RootPage> {
             )
           ],
           toolbarHeight: 80,
-          title: const Text('Gemini Client'),
+          title: const ApplicationLogo(
+            height: 30,
+          ),
           shadowColor: Colors.blueAccent,
           bottom: PreferredSize(
               preferredSize: Size.zero,
@@ -77,15 +89,19 @@ class _RootPageState extends ConsumerState<RootPage> {
           return Row(
             children: [
               NavigationRail(
+                labelType: NavigationRailLabelType.all,
                 destinations: navItems
                     .map((e) => NavigationRailDestination(
-                        icon: Icon(e.icon), label: Text(e.label)))
+                        icon: Icon(e.icon),
+                        selectedIcon: Icon(e.activeIcon),
+                        label: Text(e.label)))
                     .toList(),
                 selectedIndex: currentIndex,
                 onDestinationSelected: (value) {
                   onChatPageChanged(value);
                 },
               ),
+              const VerticalDivider(),
               Expanded(child: pages[currentIndex])
             ],
           );
@@ -99,7 +115,9 @@ class _RootPageState extends ConsumerState<RootPage> {
               currentIndex: currentIndex,
               items: navItems
                   .map((e) => BottomNavigationBarItem(
-                      icon: Icon(e.icon), label: e.label))
+                      activeIcon: Icon(e.activeIcon),
+                      icon: Icon(e.icon),
+                      label: e.label))
                   .toList()),
     );
   }
@@ -108,5 +126,6 @@ class _RootPageState extends ConsumerState<RootPage> {
 class NavItem {
   String label;
   IconData icon;
-  NavItem({required this.label, required this.icon});
+  IconData activeIcon;
+  NavItem({required this.label, required this.icon, required this.activeIcon});
 }
