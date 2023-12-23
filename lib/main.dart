@@ -8,7 +8,7 @@ import 'package:device_preview/device_preview.dart';
 
 void main() {
   runApp(DevicePreview(
-      enabled: !kReleaseMode,
+      enabled: false,
       builder: ((context) => ProviderScope(
             child: provider.ChangeNotifierProvider(
                 create: (context) => ThemeNotifier(), child: const MyApp()),
