@@ -24,7 +24,7 @@ To install `convogen`, follow these steps:
 
 ## Usage
 
-To use `convogen`, [provide instructions or guidelines]:
+To use `convogen`:
 
 - Make sure to insert you gemini api key in settings page or application
 
