@@ -24,7 +24,7 @@ class MyApp extends StatelessWidget {
       routeInformationParser: router.routeInformationParser,
       routeInformationProvider: router.routeInformationProvider,
       routerDelegate: router.routerDelegate,
-      title: 'Gemini Client',
+      title: 'Convogen',
       debugShowCheckedModeBanner: false,
       themeMode: provider.Provider.of<ThemeNotifier>(context).themeMode,
       darkTheme: ThemeData.dark(
