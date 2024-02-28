@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:convogen/providers/app_settings_provider.dart';
 import 'package:convogen/screens/chat.dart';
-import 'package:convogen/screens/chats.dart';
 import 'package:convogen/screens/settings.dart';
 import 'package:convogen/screens/splash.dart';
 
@@ -17,8 +16,8 @@ class RootPage extends ConsumerStatefulWidget {
 }
 
 class _RootPageState extends ConsumerState<RootPage> {
-  int currentIndex = 1;
-  final _pageController = PageController(initialPage: 1);
+  int currentIndex = 0;
+  final _pageController = PageController(initialPage: 0);
 
   void onChatPageChanged(int index) {
     setState(() {
@@ -28,17 +27,9 @@ class _RootPageState extends ConsumerState<RootPage> {
         curve: Curves.easeOut, duration: const Duration(milliseconds: 300));
   }
 
-  List<Widget> pages = [
-    const ChatsScreen(),
-    const ChatPage(),
-    const SettingsScreen()
-  ];
+  List<Widget> pages = [const ChatPage(), const SettingsScreen()];
 
   List<NavItem> navItems = [
-    NavItem(
-        label: "Chats",
-        icon: CupertinoIcons.chat_bubble_2,
-        activeIcon: CupertinoIcons.chat_bubble_2_fill),
     NavItem(
         label: "Gemini",
         icon: CupertinoIcons.bolt,
@@ -60,30 +51,22 @@ class _RootPageState extends ConsumerState<RootPage> {
 
     return Scaffold(
       appBar: AppBar(
-          centerTitle: false,
-          actions: [
-            IconButton(
-              onPressed: () {},
-              icon: const Icon(CupertinoIcons.share),
-            )
-          ],
-          toolbarHeight: 80,
-          title: const ApplicationLogo(
-            height: 30,
-          ),
-          shadowColor: Colors.blueAccent,
-          bottom: PreferredSize(
-              preferredSize: Size.zero,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                height: currentIndex == 1 ? 10 : 0,
-                color: Colors.blueAccent,
-              )),
-          backgroundColor: Theme.of(context).colorScheme.background,
-          elevation: currentIndex == 1 &&
-                  Theme.of(context).brightness == Brightness.dark
-              ? 30
-              : 0),
+        centerTitle: false,
+        actions: [
+          IconButton(
+            onPressed: () {
+              onChatPageChanged(1);
+            },
+            icon: const Icon(CupertinoIcons.settings),
+          )
+        ],
+        toolbarHeight: 80,
+        backgroundColor: Colors.transparent,
+        title: const ApplicationLogo(
+          height: 30,
+        ),
+        // shadowColor: Colors.blueAccent,
+      ),
       body: LayoutBuilder(builder: (context, constrains) {
         if (constrains.maxWidth > 700) {
           return Row(
@@ -108,17 +91,6 @@ class _RootPageState extends ConsumerState<RootPage> {
         }
         return PageView(controller: _pageController, children: pages);
       }),
-      bottomNavigationBar: MediaQuery.of(context).size.width > 700
-          ? null
-          : BottomNavigationBar(
-              onTap: (index) => onChatPageChanged(index),
-              currentIndex: currentIndex,
-              items: navItems
-                  .map((e) => BottomNavigationBarItem(
-                      activeIcon: Icon(e.activeIcon),
-                      icon: Icon(e.icon),
-                      label: e.label))
-                  .toList()),
     );
   }
 }

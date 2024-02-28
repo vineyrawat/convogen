@@ -75,32 +75,6 @@ class SettingsScreen extends ConsumerWidget {
                     OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
               ),
             ),
-            const SizedBox(
-              height: 10,
-            ),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(
-                CupertinoIcons.doc_text_viewfinder,
-                size: 30,
-              ),
-              title: const Text("Enable Document Upload"),
-              trailing: CupertinoSwitch(
-                value: false,
-                onChanged: (value) {
-                  toastification.show(
-                      context: context,
-                      type: ToastificationType.warning,
-                      style: ToastificationStyle.flat,
-                      title: 'Coming Soon',
-                      description: 'Coming Soon',
-                      alignment: Alignment.bottomCenter,
-                      autoCloseDuration: const Duration(seconds: 4),
-                      boxShadow: lowModeShadow,
-                      showProgressBar: false);
-                },
-              ),
-            ),
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(CupertinoIcons.moon_stars),
