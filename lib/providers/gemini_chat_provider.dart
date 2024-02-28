@@ -1,10 +1,8 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
+import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:convogen/providers/app_settings_provider.dart';
-import 'package:google_gemini/google_gemini.dart';
 
 var geminiChatProvider =
     StateNotifierProvider<GeminiChatProvider, GeminiChatState>(
@@ -19,6 +17,7 @@ class GeminiChatState {
     types.User(id: '1', firstName: 'Gemini', role: types.Role.user),
     types.User(id: '2', firstName: 'User', role: types.Role.user)
   ];
+
   const GeminiChatState(
       {required this.isLoading,
       required this.messages,
@@ -82,14 +81,19 @@ class GeminiChatProvider extends StateNotifier<GeminiChatState> {
         text: prompt,
         createdAt: DateTime.now().millisecondsSinceEpoch));
     state = state.copyWith(isTyping: true);
-    var gemini =
-        GoogleGemini(apiKey: ref.read(appSettingsProvider).geminiApiKey);
-    var res = await gemini.generateFromText(prompt);
-    log(res.toString());
+
+    var chats = state.messages.map((dynamic e) => Content(
+        parts: [Parts(text: e.text)],
+        role: e.author == state.users[1] ? 'model' : 'user'));
+    var flutterGemini =
+        Gemini.init(apiKey: ref.read(appSettingsProvider).geminiApiKey);
+
+    var res = await flutterGemini.chat(chats.toList().reversed.toList());
     addMessage(types.TextMessage(
         author: state.users[1],
         id: DateTime.now().toString(),
-        text: res.text,
+        // text: res!.content!.parts!.map((e) => e.text).join("\n"),
+        text: res?.output ?? "Unable to proceed",
         createdAt: DateTime.now().millisecondsSinceEpoch));
     state = state.copyWith(isTyping: false);
   }

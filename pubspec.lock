@@ -273,6 +273,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.0"
+  dio:
+    dependency: transitive
+    description:
+      name: dio
+      sha256: "49af28382aefc53562459104f64d16b9dfd1e8ef68c862d5af436cc8356ce5a8"
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.4.1"
   equatable:
     dependency: transitive
     description:
@@ -342,6 +350,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.0"
+  flutter_gemini:
+    dependency: "direct main"
+    description:
+      name: flutter_gemini
+      sha256: "1e106f4644d1bc3b1806c9fbf0b6399873b16041d61ea12e3fc229f23f3aa067"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.3"
   flutter_link_previewer:
     dependency: transitive
     description:
@@ -445,14 +461,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.1.0"
-  google_gemini:
-    dependency: "direct main"
-    description:
-      name: google_gemini
-      sha256: "8cf19c909e5bfb0518391f4d538251f29e3283caa021249b76afcd69b2963e26"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.0.9"
   graphs:
     dependency: transitive
     description:
