@@ -4,6 +4,7 @@ import 'package:flutter_chat_ui/flutter_chat_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:convogen/providers/gemini_chat_provider.dart';
 import 'package:simple_gradient_text/simple_gradient_text.dart';
+import 'package:shimmer/shimmer.dart';
 
 class ChatPage extends ConsumerWidget {
   const ChatPage({super.key});
@@ -31,7 +32,7 @@ class ChatPage extends ConsumerWidget {
             ? DarkChatTheme(
                 backgroundColor: Theme.of(context).scaffoldBackgroundColor,
                 primaryColor: Theme.of(context).colorScheme.primary,
-                secondaryColor: Colors.black,
+                secondaryColor: Theme.of(context).canvasColor,
                 inputBackgroundColor: Colors.black,
               )
             : DefaultChatTheme(
@@ -49,6 +50,30 @@ class ChatPage extends ConsumerWidget {
           await ref.read(geminiChatProvider.notifier).getFromText(p0);
         }),
         typingIndicatorOptions: TypingIndicatorOptions(
+          customTypingIndicator: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0),
+            child: SizedBox(
+              width: 200.0,
+              child: Shimmer.fromColors(
+                  baseColor: Colors.blueGrey.withAlpha(100),
+                  highlightColor: Colors.tealAccent.shade100,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ...[1, 2, 3]
+                          .map((i) => Container(
+                                width: i == 3 ? 100 : 200,
+                                height: 20,
+                                decoration: BoxDecoration(
+                                    color: Colors.white.withAlpha(100),
+                                    borderRadius: BorderRadius.circular(20)),
+                                margin: const EdgeInsets.only(bottom: 10),
+                              ))
+                          .toList()
+                    ],
+                  )),
+            ),
+          ),
           typingMode: TypingIndicatorMode.name,
           typingUsers: geminiChat.isTyping ? [geminiChat.users[0]] : [],
         ),
@@ -176,8 +201,8 @@ class EmptyStateWidget extends StatelessWidget {
 
 class CustomBottomInputBar extends StatelessWidget {
   final bool collapsed;
-  Function onSendPressed;
-  CustomBottomInputBar(
+  final Function onSendPressed;
+  const CustomBottomInputBar(
       {super.key, this.collapsed = false, required this.onSendPressed});
 
   @override
@@ -188,10 +213,10 @@ class CustomBottomInputBar extends StatelessWidget {
       duration: const Duration(milliseconds: 300),
       // height: 100,
       decoration: BoxDecoration(
-        boxShadow: const [BoxShadow(blurRadius: 10, offset: Offset(0, 8))],
+        // boxShadow: const [BoxShadow(blurRadius: 5, offset: Offset(0, 8))],
         borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(20), topRight: Radius.circular(20)),
-        color: Theme.of(context).colorScheme.background,
+        color: Theme.of(context).cardColor,
       ),
       child: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -201,6 +226,9 @@ class CustomBottomInputBar extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             TextField(
+                onSubmitted: (value) {
+                  onSendPressed(inputController.text);
+                },
                 controller: inputController,
                 decoration: InputDecoration(
                     hintStyle: const TextStyle(

@@ -52,7 +52,13 @@ class MyApp extends StatelessWidget {
       themeAnimationDuration: Duration.zero,
       theme: ThemeData(
         textTheme: GoogleFonts.poppinsTextTheme(),
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal).copyWith(),
+        appBarTheme: const AppBarTheme(surfaceTintColor: Colors.teal),
+        colorScheme: const ColorScheme.light().copyWith(
+            primary: Colors.teal,
+            secondary: Colors.teal,
+            background: Colors.white,
+            surface: Colors.teal.shade50,
+            primaryContainer: Colors.teal),
         useMaterial3: true,
       ),
     );

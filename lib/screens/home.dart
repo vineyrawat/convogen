@@ -84,7 +84,9 @@ class _RootPageState extends ConsumerState<RootPage> {
                   onChatPageChanged(value);
                 },
               ),
-              const VerticalDivider(),
+              // const VerticalDivider(
+              //   color: Colors.black12,
+              // ),
               Expanded(child: pages[currentIndex])
             ],
           );
