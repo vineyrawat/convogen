@@ -1,4 +1,8 @@
+import 'dart:developer';
+import 'dart:io';
+
 import "package:flutter/material.dart";
+import 'package:image_picker/image_picker.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,11 +10,18 @@ import 'package:convogen/providers/gemini_chat_provider.dart';
 import 'package:simple_gradient_text/simple_gradient_text.dart';
 import 'package:shimmer/shimmer.dart';
 
-class ChatPage extends ConsumerWidget {
+class ChatPage extends ConsumerStatefulWidget {
   const ChatPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ChatPage> createState() => _ChatPageState();
+}
+
+class _ChatPageState extends ConsumerState<ChatPage> {
+  XFile? selectedImage;
+
+  @override
+  Widget build(BuildContext context) {
     var geminiChat = ref.watch(geminiChatProvider);
 
     if (geminiChat is InitialLoadingState) {
@@ -26,7 +37,9 @@ class ChatPage extends ConsumerWidget {
         },
         emptyState: EmptyStateWidget(onSendPressed: (p0) async {
           FocusManager.instance.primaryFocus?.unfocus();
-          await ref.read(geminiChatProvider.notifier).getFromText(p0);
+          await ref
+              .read(geminiChatProvider.notifier)
+              .getPrompt(p0, selectedImage);
         }),
         theme: Theme.of(context).brightness == Brightness.dark
             ? DarkChatTheme(
@@ -45,10 +58,28 @@ class ChatPage extends ConsumerWidget {
               ),
         messages: geminiChat.messages,
         onSendPressed: (p0) async {},
-        customBottomWidget: CustomBottomInputBar(onSendPressed: (p0) async {
-          FocusManager.instance.primaryFocus?.unfocus();
-          await ref.read(geminiChatProvider.notifier).getFromText(p0);
-        }),
+        customBottomWidget: CustomBottomInputBar(
+            selectedImage: selectedImage,
+            setImage: (XFile? image) {
+              setState(() {
+                selectedImage = image;
+                log("SET IMAGE TO: ${image!.path}");
+              });
+            },
+            onSendPressed: (p0) async {
+              FocusManager.instance.primaryFocus?.unfocus();
+              if (selectedImage != null) {
+                var p = selectedImage;
+                setState(() {
+                  selectedImage = null;
+                });
+                await ref.read(geminiChatProvider.notifier).getPrompt(p0, p!);
+              } else if (p0.isNotEmpty) {
+                await ref
+                    .read(geminiChatProvider.notifier)
+                    .getPrompt(p0, selectedImage);
+              }
+            }),
         typingIndicatorOptions: TypingIndicatorOptions(
           customTypingIndicator: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -202,12 +233,28 @@ class EmptyStateWidget extends StatelessWidget {
 class CustomBottomInputBar extends StatelessWidget {
   final bool collapsed;
   final Function onSendPressed;
+  final Function setImage;
+  final XFile? selectedImage;
   const CustomBottomInputBar(
-      {super.key, this.collapsed = false, required this.onSendPressed});
+      {super.key,
+      this.selectedImage,
+      this.collapsed = false,
+      required this.onSendPressed,
+      required this.setImage});
 
   @override
   Widget build(BuildContext context) {
     var inputController = TextEditingController();
+
+    handleCameraPressed() {
+      log("Camera pressed");
+      ImagePicker().pickImage(source: ImageSource.gallery).then((image) {
+        if (image != null) {
+          log("IMAGE SELECTED: ${image.path}");
+          setImage(image);
+        }
+      });
+    }
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
@@ -248,6 +295,28 @@ class CustomBottomInputBar extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                selectedImage != null
+                    ? Container(
+                        margin: const EdgeInsets.only(right: 10),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Image.file(
+                            File(selectedImage!.path),
+                            width: 50,
+                            height: 50,
+                          ),
+                        ),
+                      )
+                    : const SizedBox(),
+                selectedImage != null
+                    ? IconButton(
+                        onPressed: () => setImage(null),
+                        icon: Icon(
+                          Icons.delete_outline,
+                          color: Theme.of(context).colorScheme.error,
+                        ))
+                    : const SizedBox(),
+                selectedImage != null ? const Spacer() : const SizedBox(),
                 FilledButton(
                   // color: Colors.red,
                   style: ButtonStyle(
@@ -265,7 +334,7 @@ class CustomBottomInputBar extends StatelessWidget {
                         width: 10,
                       ),
                       IconButton(
-                          onPressed: () {},
+                          onPressed: handleCameraPressed,
                           icon: const Icon(Icons.camera_alt_outlined))
                     ],
                   ),

@@ -1,8 +1,11 @@
+import 'dart:developer';
 import 'package:flutter/material.dart';
-import 'package:flutter_gemini/flutter_gemini.dart';
+// import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:convogen/providers/app_settings_provider.dart';
+import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:image_picker/image_picker.dart';
 
 var geminiChatProvider =
     StateNotifierProvider<GeminiChatProvider, GeminiChatState>(
@@ -74,27 +77,68 @@ class GeminiChatProvider extends StateNotifier<GeminiChatState> {
     state = state.copyWith(messages: messages);
   }
 
-  getFromText(String prompt) async {
+  getPrompt(String prompt, XFile? result) async {
+    var model = GenerativeModel(
+        model: 'gemini-pro',
+        apiKey: ref.read(appSettingsProvider).geminiApiKey);
+    var filteredMessage = state.messages.whereType<types.TextMessage>();
+    // return;
+    var history = filteredMessage
+        .map((dynamic e) => e.author == state.users[1]
+            ? Content.model([TextPart(e.text)])
+            : Content.text(e.text))
+        .toList()
+        .reversed
+        .toList();
+
+    var chat = model.startChat(history: history);
+    if (result != null) {
+      final bytes = await result.readAsBytes();
+      final image = await decodeImageFromList(bytes);
+      addMessage(types.ImageMessage(
+        name: result.name,
+        size: bytes.length,
+        author: state.users[0],
+        id: DateTime.now().toString(),
+        uri: result.path,
+        height: image.height.toDouble(),
+        width: image.width.toDouble(),
+        createdAt: DateTime.now().millisecondsSinceEpoch,
+      ));
+    }
+
     addMessage(types.TextMessage(
         author: state.users[0],
         id: DateTime.now().toString(),
         text: prompt,
         createdAt: DateTime.now().millisecondsSinceEpoch));
+
     state = state.copyWith(isTyping: true);
 
-    var chats = state.messages.map((dynamic e) => Content(
-        parts: [Parts(text: e.text)],
-        role: e.author == state.users[1] ? 'model' : 'user'));
-    var flutterGemini =
-        Gemini.init(apiKey: ref.read(appSettingsProvider).geminiApiKey);
-
-    var res = await flutterGemini.chat(chats.toList().reversed.toList());
-    addMessage(types.TextMessage(
+    try {
+      if (prompt.isEmpty && result == null) return;
+      if (result != null) {}
+      var res = await chat.sendMessage(result == null
+          ? Content.text(prompt)
+          : Content.multi([
+              TextPart(prompt),
+              ...[DataPart("image/jpeg", await result.readAsBytes())]
+            ]));
+      log(res.text!);
+      addMessage(types.TextMessage(
+          author: state.users[1],
+          id: DateTime.now().toString(),
+          text: res.text ?? "No response",
+          createdAt: DateTime.now().millisecondsSinceEpoch));
+    } catch (e) {
+      addMessage(types.TextMessage(
         author: state.users[1],
         id: DateTime.now().toString(),
-        // text: res!.content!.parts!.map((e) => e.text).join("\n"),
-        text: res?.output ?? "Unable to proceed",
-        createdAt: DateTime.now().millisecondsSinceEpoch));
+        text: e.toString(),
+        createdAt: DateTime.now().millisecondsSinceEpoch,
+      ));
+      log(e.toString());
+    }
     state = state.copyWith(isTyping: false);
   }
 }
