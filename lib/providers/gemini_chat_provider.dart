@@ -79,7 +79,7 @@ class GeminiChatProvider extends StateNotifier<GeminiChatState> {
 
   getPrompt(String prompt, XFile? result) async {
     var model = GenerativeModel(
-        model: 'gemini-pro',
+        model: result == null ? 'gemini-pro' : 'gemini-pro-vision',
         apiKey: ref.read(appSettingsProvider).geminiApiKey);
     var filteredMessage = state.messages.whereType<types.TextMessage>();
     // return;
@@ -118,12 +118,14 @@ class GeminiChatProvider extends StateNotifier<GeminiChatState> {
     try {
       if (prompt.isEmpty && result == null) return;
       if (result != null) {}
-      var res = await chat.sendMessage(result == null
-          ? Content.text(prompt)
-          : Content.multi([
-              TextPart(prompt),
-              ...[DataPart("image/jpeg", await result.readAsBytes())]
-            ]));
+      var res = result == null
+          ? await chat.sendMessage(Content.text(prompt))
+          : await model.generateContent([
+              Content.multi([
+                TextPart(prompt),
+                ...[DataPart("image/jpeg", await result.readAsBytes())]
+              ])
+            ]);
       log(res.text!);
       addMessage(types.TextMessage(
           author: state.users[1],
