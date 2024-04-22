@@ -1,7 +1,10 @@
 import 'dart:developer';
 import 'dart:io';
 
+import 'package:flutter/cupertino.dart';
 import "package:flutter/material.dart";
+import 'package:flutter/services.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
@@ -11,6 +14,7 @@ import 'package:simple_gradient_text/simple_gradient_text.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:toastification/toastification.dart';
 
 class ChatPage extends ConsumerStatefulWidget {
   const ChatPage({super.key});
@@ -37,6 +41,64 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         customStatusBuilder: (message, {required context}) {
           return const SizedBox();
         },
+        textMessageBuilder: (p0, {required messageWidth, required showName}) {
+          if (p0.author.id == '1') {
+            return Padding(
+              padding: const EdgeInsets.all(15.0),
+              child: Text(p0.text, style: const TextStyle(color: Colors.white)),
+            );
+          }
+          return Markdown(
+            data: p0.text,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+          );
+        },
+        listBottomWidget: AnimatedContainer(
+          height: geminiChat.isTyping ? 0 : 80,
+          duration: const Duration(milliseconds: 300),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0)
+                .copyWith(bottom: 20),
+            child: Row(
+              children: [
+                TextButton(
+                    onPressed: () {
+                      ref.read(geminiChatProvider.notifier).reset();
+                    },
+                    child: Row(
+                      children: [
+                        Icon(CupertinoIcons.bolt_circle,
+                            color: Theme.of(context).colorScheme.primary),
+                        const SizedBox(width: 5),
+                        const Text("Start New Chat"),
+                      ],
+                    )),
+                IconButton(
+                    onPressed: () {
+                      var text =
+                          (geminiChat.messages.first.toJson()["type"] == 'text')
+                              ? geminiChat.messages.first.toJson()["text"]
+                              : '';
+                      log(text);
+                      Clipboard.setData(ClipboardData(text: text));
+                      toastification.show(
+                        context: context,
+                        type: ToastificationType.success,
+                        style: ToastificationStyle.flat,
+                        title: const Text('Copied'),
+                        description: const Text('Copied to clipboard'),
+                        alignment: Alignment.bottomCenter,
+                        autoCloseDuration: const Duration(seconds: 4),
+                        boxShadow: lowModeShadow,
+                      );
+                    },
+                    icon: Icon(Icons.copy_rounded,
+                        color: Theme.of(context).colorScheme.primary))
+              ],
+            ),
+          ),
+        ),
         emptyState: EmptyStateWidget(onSendPressed: (p0) async {
           FocusManager.instance.primaryFocus?.unfocus();
           await ref
@@ -336,7 +398,10 @@ class _CustomBottomInputBarState extends State<CustomBottomInputBar> {
                   widget.onSendPressed(inputController.text);
                   inputController.clear();
                 },
+                minLines: 1,
+                maxLines: 5,
                 controller: inputController,
+                keyboardType: TextInputType.text,
                 decoration: InputDecoration(
                     hintStyle: const TextStyle(
                       fontSize: 18,

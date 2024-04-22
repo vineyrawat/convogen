@@ -52,6 +52,10 @@ class GeminiChatProvider extends StateNotifier<GeminiChatState> {
     state = state.copyWith(isTyping: isTyping);
   }
 
+  reset() {
+    state = state.copyWith(isLoading: false, messages: [], isTyping: false);
+  }
+
   init() async {
     // create a timeout
     await Future.delayed(const Duration(seconds: 2));
