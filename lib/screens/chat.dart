@@ -1,7 +1,10 @@
 import 'dart:developer';
 import 'dart:io';
 
+import 'package:flutter/cupertino.dart';
 import "package:flutter/material.dart";
+import 'package:flutter/services.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
@@ -9,6 +12,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:convogen/providers/gemini_chat_provider.dart';
 import 'package:simple_gradient_text/simple_gradient_text.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:speech_to_text/speech_recognition_result.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:toastification/toastification.dart';
 
 class ChatPage extends ConsumerStatefulWidget {
   const ChatPage({super.key});
@@ -35,6 +41,64 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         customStatusBuilder: (message, {required context}) {
           return const SizedBox();
         },
+        textMessageBuilder: (p0, {required messageWidth, required showName}) {
+          if (p0.author.id == '1') {
+            return Padding(
+              padding: const EdgeInsets.all(15.0),
+              child: Text(p0.text, style: const TextStyle(color: Colors.white)),
+            );
+          }
+          return Markdown(
+            data: p0.text,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+          );
+        },
+        listBottomWidget: AnimatedContainer(
+          height: geminiChat.isTyping ? 0 : 80,
+          duration: const Duration(milliseconds: 300),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0)
+                .copyWith(bottom: 20),
+            child: Row(
+              children: [
+                TextButton(
+                    onPressed: () {
+                      ref.read(geminiChatProvider.notifier).reset();
+                    },
+                    child: Row(
+                      children: [
+                        Icon(CupertinoIcons.bolt_circle,
+                            color: Theme.of(context).colorScheme.primary),
+                        const SizedBox(width: 5),
+                        const Text("Start New Chat"),
+                      ],
+                    )),
+                IconButton(
+                    onPressed: () {
+                      var text =
+                          (geminiChat.messages.first.toJson()["type"] == 'text')
+                              ? geminiChat.messages.first.toJson()["text"]
+                              : '';
+                      log(text);
+                      Clipboard.setData(ClipboardData(text: text));
+                      toastification.show(
+                        context: context,
+                        type: ToastificationType.success,
+                        style: ToastificationStyle.flat,
+                        title: const Text('Copied'),
+                        description: const Text('Copied to clipboard'),
+                        alignment: Alignment.bottomCenter,
+                        autoCloseDuration: const Duration(seconds: 4),
+                        boxShadow: lowModeShadow,
+                      );
+                    },
+                    icon: Icon(Icons.copy_rounded,
+                        color: Theme.of(context).colorScheme.primary))
+              ],
+            ),
+          ),
+        ),
         emptyState: EmptyStateWidget(onSendPressed: (p0) async {
           FocusManager.instance.primaryFocus?.unfocus();
           await ref
@@ -79,6 +143,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                     .read(geminiChatProvider.notifier)
                     .getPrompt(p0, selectedImage);
               }
+              log("SEND PRESSED: $p0");
             }),
         typingIndicatorOptions: TypingIndicatorOptions(
           customTypingIndicator: Padding(
@@ -230,7 +295,7 @@ class EmptyStateWidget extends StatelessWidget {
   }
 }
 
-class CustomBottomInputBar extends StatelessWidget {
+class CustomBottomInputBar extends StatefulWidget {
   final bool collapsed;
   final Function onSendPressed;
   final Function setImage;
@@ -243,15 +308,71 @@ class CustomBottomInputBar extends StatelessWidget {
       required this.setImage});
 
   @override
+  State<CustomBottomInputBar> createState() => _CustomBottomInputBarState();
+}
+
+class _CustomBottomInputBarState extends State<CustomBottomInputBar> {
+  var inputController = TextEditingController();
+  final stt.SpeechToText _speechToText = stt.SpeechToText();
+  bool _speechEnabled = false;
+  String _lastWords = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _initSpeech();
+  }
+
+  /// This has to happen only once per app
+  void _initSpeech() async {
+    _speechEnabled = await _speechToText.initialize();
+    setState(() {});
+  }
+
+  /// Each time to start a speech recognition session
+  void _startListening() async {
+    await _speechToText.listen(onResult: _onSpeechResult);
+    setState(() {});
+  }
+
+  /// Manually stop the active speech recognition session
+  /// Note that there are also timeouts that each platform enforces
+  /// and the SpeechToText plugin supports setting timeouts on the
+  /// listen method.
+  void _stopListening() async {
+    await _speechToText.stop();
+    setState(() {});
+  }
+
+  /// This is the callback that the SpeechToText plugin calls when
+  /// the platform returns recognized words.
+  void _onSpeechResult(SpeechRecognitionResult result) {
+    setState(() {
+      _lastWords = result.recognizedWords;
+      if (result.finalResult) {
+        inputController.text = _lastWords;
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    var inputController = TextEditingController();
+    handleMicPress() async {
+      log("Mic Pressed");
+      if (_speechEnabled) {
+        _startListening();
+      } else {
+        // show snackbar
+        log("Speech not enabled");
+      }
+    }
 
     handleCameraPressed() {
       log("Camera pressed");
       ImagePicker().pickImage(source: ImageSource.gallery).then((image) {
         if (image != null) {
           log("IMAGE SELECTED: ${image.path}");
-          setImage(image);
+          widget.setImage(image);
         }
       });
     }
@@ -274,18 +395,25 @@ class CustomBottomInputBar extends StatelessWidget {
           children: [
             TextField(
                 onSubmitted: (value) {
-                  onSendPressed(inputController.text);
+                  widget.onSendPressed(inputController.text);
+                  inputController.clear();
                 },
+                minLines: 1,
+                maxLines: 5,
                 controller: inputController,
+                keyboardType: TextInputType.text,
                 decoration: InputDecoration(
                     hintStyle: const TextStyle(
                       fontSize: 18,
                     ),
-                    hintText: 'Type, talk, or share \na photo',
+                    hintText: _speechToText.isListening
+                        ? 'Listening...'
+                        : 'Type, talk, or share \na photo',
                     hintMaxLines: 2,
                     suffix: IconButton(
                         onPressed: () {
-                          onSendPressed(inputController.text);
+                          widget.onSendPressed(inputController.text);
+                          inputController.clear();
                         },
                         icon: const Icon(Icons.send_rounded)),
                     border: InputBorder.none)),
@@ -295,28 +423,30 @@ class CustomBottomInputBar extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                selectedImage != null
+                widget.selectedImage != null
                     ? Container(
                         margin: const EdgeInsets.only(right: 10),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(10),
                           child: Image.file(
-                            File(selectedImage!.path),
+                            File(widget.selectedImage!.path),
                             width: 50,
                             height: 50,
                           ),
                         ),
                       )
                     : const SizedBox(),
-                selectedImage != null
+                widget.selectedImage != null
                     ? IconButton(
-                        onPressed: () => setImage(null),
+                        onPressed: () => widget.setImage(null),
                         icon: Icon(
                           Icons.delete_outline,
                           color: Theme.of(context).colorScheme.error,
                         ))
                     : const SizedBox(),
-                selectedImage != null ? const Spacer() : const SizedBox(),
+                widget.selectedImage != null
+                    ? const Spacer()
+                    : const SizedBox(),
                 FilledButton(
                   // color: Colors.red,
                   style: ButtonStyle(
@@ -327,9 +457,15 @@ class CustomBottomInputBar extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      IconButton(
-                          onPressed: () {},
-                          icon: const Icon(Icons.mic_none_outlined)),
+                      _speechToText.isListening
+                          ? IconButton(
+                              onPressed: () async {
+                                _stopListening();
+                              },
+                              icon: const Icon(Icons.stop_circle_outlined))
+                          : IconButton(
+                              onPressed: handleMicPress,
+                              icon: const Icon(Icons.mic_none_outlined)),
                       const SizedBox(
                         width: 10,
                       ),
